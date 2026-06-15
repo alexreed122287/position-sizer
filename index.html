@@ -53,6 +53,34 @@
   .status{font-size:11.5px;font-weight:600}
   .status.ok{color:var(--pos)} .status.warn{color:var(--warn)}
   .empty{color:var(--mut2);text-align:center;padding:26px 10px;font-size:13.5px}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin:2px 0 12px}
+  .tab{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:10px;font-size:14px;font-weight:700;color:var(--mut);cursor:pointer}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .view.hidden{display:none}
+  /* journal */
+  .jadd{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+  .jadd #jSym{grid-column:1 / -1}
+  .jadd input,.jadd button{font-size:16px}
+  .jwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}
+  table.jt{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums}
+  table.jt th,table.jt td{padding:9px 10px;font-size:12.5px;text-align:right;white-space:nowrap;
+    border-bottom:1px solid var(--line)}
+  table.jt thead th{position:sticky;top:0;background:var(--card2);color:var(--mut);
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;z-index:2}
+  table.jt th.stick,table.jt td.stick{position:sticky;left:0;z-index:1;text-align:left;
+    background:var(--card2);border-right:1px solid var(--line)}
+  table.jt thead th.stick{z-index:3}
+  table.jt td.tick{font-weight:700;font-size:14px;color:var(--txt)}
+  table.jt td.when{text-align:left;color:var(--mut)}
+  table.jt td.pos{color:var(--pos)} table.jt td.neg{color:var(--neg)}
+  table.jt td.jmsg{text-align:left;color:var(--mut)} table.jt td.jmsg.err{color:var(--neg)}
+  table.jt input.cell{width:84px;background:var(--bg);border:1px solid var(--line);border-radius:7px;
+    padding:6px 7px;font-size:13px;text-align:right;color:var(--txt)}
+  table.jt td.jact{white-space:nowrap}
+  table.jt td.jact .mini{padding:5px 8px;margin-left:3px}
+  .tag{font-size:9px;color:var(--warn);border:1px solid var(--warn);border-radius:4px;padding:1px 3px;margin-left:3px}
   /* ticker card */
   .tkhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .tksym{font-size:19px;font-weight:700;letter-spacing:.3px}
@@ -97,6 +125,6 @@
 </head>
 <body>
   <div id="app"></div>
-  <script src="app.js?v=1.0.0"></script>
+  <script src="app.js?v=1.1.0"></script>
 </body>
 </html>

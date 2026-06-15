@@ -70,5 +70,27 @@ check('pickExpiration = 2026-07-17', pe.exp === '2026-07-17' && pe.dte === 33);
 var pe2 = A.pickExpiration(['2026-06-16', '2026-06-19'], 45, 7, today); // both < minDTE -> fallback picks longest-dated (closest to target)
 check('pickExpiration fallback = 2026-06-19', pe2 && pe2.exp === '2026-06-19');
 
+// ---- computeLevels (shared by sizer + journal) ----
+var lv = A.computeLevels(200, 4);
+check('levels +1/-1', lv.plusOne === 204 && lv.minusOne === 196);
+check('levels +0.5/-0.5', lv.plusHalf === 202 && lv.minusHalf === 198);
+check('levels entry', lv.entry === 200);
+
+// ---- ctToEt (Central -> Eastern, +1h) ----
+var et = A.ctToEt('2026-06-12', '09:42');
+check('ctToEt adds 1h', et.getHours() === 10 && et.getMinutes() === 42 && et.getDate() === 12);
+var et2 = A.ctToEt('2026-06-12', '15:00');
+check('ctToEt 15:00->16:00', et2.getHours() === 16);
+
+// ---- pickIntradayBar (nearest 5-min bar) ----
+var bars = [
+  { dt: '2026-06-12 09:35:00', close: 9 },
+  { dt: '2026-06-12 09:40:00', close: 10 },
+  { dt: '2026-06-12 09:45:00', close: 11 }
+];
+var b = A.pickIntradayBar(bars, new Date(2026, 5, 12, 9, 42, 0)); // 09:42 -> nearest 09:40
+check('pickIntradayBar nearest', b.dt === '2026-06-12 09:40:00' && b.close === 10);
+check('pickIntradayBar null on empty', A.pickIntradayBar([], new Date(2026, 5, 12, 9, 42, 0)) === null);
+
 console.log(fails === 0 ? '\nALL PASS' : '\n' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);

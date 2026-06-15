@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  var APP_VERSION = 'v1.1.0';
+  var APP_VERSION = 'v1.1.1';
 
   // ---- Tradier data path (Sizer tab) ----
   var PROXY_FALLBACK = 'https://tradier-proxy.alexander-s-reed.workers.dev';
@@ -181,6 +181,19 @@
   function computeLevels(price, atr) {
     return { plusOne: price + atr, plusHalf: price + 0.5 * atr, entry: price,
       minusHalf: price - 0.5 * atr, minusOne: price - atr };
+  }
+
+  // Where current price sits vs entry, in ATR multiples. zone drives the color.
+  function atrStatus(now, entry, atr) {
+    if (now == null || entry == null || !isFinite(atr) || atr <= 0) return null;
+    var mult = (now - entry) / atr, zone;
+    if (mult >= 1) zone = 'p2';
+    else if (mult >= 0.5) zone = 'p1';
+    else if (mult >= 0) zone = 'p0';
+    else if (mult > -0.5) zone = 'n0';
+    else if (mult > -1) zone = 'n1';
+    else zone = 'n2';
+    return { mult: mult, zone: zone, label: (mult >= 0 ? '+' : '') + mult.toFixed(2) + ' ATR' };
   }
 
   function fmtDateYMD(d) {
@@ -647,36 +660,42 @@
     if (!STATE.journal.length) { wrap.innerHTML = '<div class="empty">Add a long call you bought: ticker, purchase date, and CST time.</div>'; return; }
     var head = '<table class="jt"><thead><tr>' +
       '<th class="stick">Ticker</th><th>Bought (CST)</th><th>Entry</th><th>ATR</th>' +
-      '<th>-1 ATR</th><th>-0.5 ATR</th><th>+0.5 ATR</th><th>+1 ATR</th><th>Now</th><th></th>' +
+      '<th>-1 ATR</th><th>-0.5 ATR</th><th>+0.5 ATR</th><th>+1 ATR</th><th>Now</th><th>vs entry</th><th></th>' +
       '</tr></thead><tbody>' + STATE.journal.map(renderJournalRow).join('') + '</tbody></table>';
     wrap.innerHTML = '<div class="jwrap">' + head + '</div>';
   }
   function renderJournalRow(row) {
     var when = fmtMDY(row.date) + ' ' + (row.time || '');
     var entryCell = '<input class="cell" data-act="jentry" type="number" inputmode="decimal" step="0.01" value="' + (row.entry != null ? row.entry : '') + '"' + (row.manual ? ' title="manual override"' : '') + '>';
-    var lv = (row.entry != null && row.atr != null) ? computeLevels(row.entry, row.atr) : null;
-    var cells;
-    if (row.status === 'loading') cells = '<td class="entry">' + entryCell + '</td><td colspan="6" class="jmsg">loading...</td>';
-    else if (row.status === 'error') cells = '<td class="entry">' + entryCell + '</td><td colspan="6" class="jmsg err">' + esc(row.err || 'error') + '</td>';
-    else cells = '<td class="entry">' + entryCell + '</td>' +
-      '<td>' + money(row.atr) + '</td>' +
-      '<td class="neg">' + money(lv.minusOne) + '</td>' +
-      '<td class="neg">' + money(lv.minusHalf) + '</td>' +
-      '<td class="pos">' + money(lv.plusHalf) + '</td>' +
-      '<td class="pos">' + money(lv.plusOne) + '</td>';
-    var nowCell = '<td>' + (row.now != null ? money(row.now) : '-') + '</td>';
-    return '<tr data-id="' + row.id + '"><td class="stick tick">' + esc(row.ticker) + '</td>' +
-      '<td class="when">' + esc(when) + (row.barTime && row.barTime !== 'daily close' ? '' : (row.barTime === 'daily close' ? ' <span class="tag">eod</span>' : '')) + '</td>' +
-      cells + nowCell +
-      '<td class="jact"><button class="mini" data-act="jrefresh" title="Refresh">R</button><button class="mini" data-act="jremove" title="Remove">X</button></td></tr>';
+    var tickTd = '<td class="stick tick">' + esc(row.ticker) + '</td>';
+    var whenTd = '<td class="when">' + esc(when) + (row.barTime === 'daily close' ? ' <span class="tag">eod</span>' : '') + '</td>';
+    var actTd = '<td class="jact"><button class="mini" data-act="jrefresh" title="Refresh">R</button><button class="mini" data-act="jremove" title="Remove">X</button></td>';
+    var mid;
+    if (row.status === 'loading') mid = '<td class="entry">' + entryCell + '</td><td colspan="7" class="jmsg">loading...</td>';
+    else if (row.status === 'error') mid = '<td class="entry">' + entryCell + '</td><td colspan="7" class="jmsg err">' + esc(row.err || 'error') + '</td>';
+    else {
+      var lv = computeLevels(row.entry, row.atr);
+      var st = atrStatus(row.now, row.entry, row.atr);
+      var stCell = st ? '<span class="st ' + st.zone + '">' + st.label + '</span>' : '-';
+      mid = '<td class="entry">' + entryCell + '</td>' +
+        '<td>' + money(row.atr) + '</td>' +
+        '<td class="neg">' + money(lv.minusOne) + '</td>' +
+        '<td class="neg">' + money(lv.minusHalf) + '</td>' +
+        '<td class="pos">' + money(lv.plusHalf) + '</td>' +
+        '<td class="pos">' + money(lv.plusOne) + '</td>' +
+        '<td>' + (row.now != null ? money(row.now) : '-') + '</td>' +
+        '<td class="stcol">' + stCell + '</td>';
+    }
+    return '<tr data-id="' + row.id + '">' + tickTd + whenTd + mid + actTd + '</tr>';
   }
 
   function exportCsv() {
-    var rows = [['Ticker', 'BuyDate_CST', 'BuyTime_CST', 'Entry', 'ATR', '-1ATR', '-0.5ATR', '+0.5ATR', '+1ATR', 'Now']];
+    var rows = [['Ticker', 'BuyDate_CST', 'BuyTime_CST', 'Entry', 'ATR', '-1ATR', '-0.5ATR', '+0.5ATR', '+1ATR', 'Now', 'ATRfromEntry']];
     STATE.journal.forEach(function (r) {
       var lv = (r.entry != null && r.atr != null) ? computeLevels(r.entry, r.atr) : { minusOne: '', minusHalf: '', plusHalf: '', plusOne: '' };
+      var st = atrStatus(r.now, r.entry, r.atr);
       rows.push([r.ticker, r.date, r.time, r.entry != null ? r.entry : '', r.atr != null ? r.atr.toFixed(4) : '',
-        n(lv.minusOne), n(lv.minusHalf), n(lv.plusHalf), n(lv.plusOne), r.now != null ? r.now : '']);
+        n(lv.minusOne), n(lv.minusHalf), n(lv.plusHalf), n(lv.plusOne), r.now != null ? r.now : '', st ? st.mult.toFixed(2) : '']);
     });
     function n(x) { return (typeof x === 'number' && isFinite(x)) ? x.toFixed(2) : ''; }
     var csv = rows.map(function (r) { return r.join(','); }).join('\n');
@@ -722,7 +741,7 @@
   }
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { computeATR: computeATR, computeSizing: computeSizing, computeLevels: computeLevels,
-      pickCall: pickCall, pickExpiration: pickExpiration, fmtDateYMD: fmtDateYMD, parseYMD: parseYMD,
-      daysToExp: daysToExp, ctToEt: ctToEt, pickIntradayBar: pickIntradayBar };
+      atrStatus: atrStatus, pickCall: pickCall, pickExpiration: pickExpiration, fmtDateYMD: fmtDateYMD,
+      parseYMD: parseYMD, daysToExp: daysToExp, ctToEt: ctToEt, pickIntradayBar: pickIntradayBar };
   }
 })();

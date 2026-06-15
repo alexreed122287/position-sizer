@@ -92,5 +92,17 @@ var b = A.pickIntradayBar(bars, new Date(2026, 5, 12, 9, 42, 0)); // 09:42 -> ne
 check('pickIntradayBar nearest', b.dt === '2026-06-12 09:40:00' && b.close === 10);
 check('pickIntradayBar null on empty', A.pickIntradayBar([], new Date(2026, 5, 12, 9, 42, 0)) === null);
 
+// ---- atrStatus (price vs entry in ATR multiples) ----
+check('atrStatus +1 -> p2', A.atrStatus(204, 200, 4).zone === 'p2' && A.atrStatus(204, 200, 4).label === '+1.00 ATR');
+check('atrStatus +0.5 -> p1', A.atrStatus(202, 200, 4).zone === 'p1');
+check('atrStatus +0.25 -> p0', A.atrStatus(201, 200, 4).zone === 'p0');
+check('atrStatus 0 -> p0', A.atrStatus(200, 200, 4).zone === 'p0' && approx(A.atrStatus(200, 200, 4).mult, 0));
+check('atrStatus -0.25 -> n0', A.atrStatus(199, 200, 4).zone === 'n0');
+check('atrStatus -0.75 -> n1', A.atrStatus(197, 200, 4).zone === 'n1');
+check('atrStatus -1.25 -> n2', A.atrStatus(195, 200, 4).zone === 'n2' && A.atrStatus(195, 200, 4).label === '-1.25 ATR');
+check('atrStatus null inputs', A.atrStatus(null, 200, 4) === null);
+check('atrStatus zero atr', A.atrStatus(200, 200, 0) === null);
+check('atrStatus demo NVDA', A.atrStatus(145.10, 142.55, 4.02).zone === 'p1' && A.atrStatus(145.10, 142.55, 4.02).label === '+0.63 ATR');
+
 console.log(fails === 0 ? '\nALL PASS' : '\n' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);

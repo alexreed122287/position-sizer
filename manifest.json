@@ -1,0 +1,10 @@
+{
+  "name": "Position Sizer",
+  "short_name": "Sizer",
+  "description": "Long-call ATR position sizing",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "orientation": "portrait"
+}
